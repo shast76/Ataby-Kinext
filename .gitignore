@@ -29,3 +29,4 @@ models/*.onnx
 !docs/images/*.png
 
 !assets/*.png
+!assets/*.ico

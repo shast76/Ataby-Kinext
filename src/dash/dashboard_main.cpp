@@ -82,9 +82,10 @@ private:
         text(f_.regular, s_.name, 98, 34, 26, { 230, 230, 235, 255 });
         // Sag ust: Ataby + KINEXT logosu (beyaz)
         if (logo_.id != 0) {
-            float h = 34, w = h * logo_.width / static_cast<float>(logo_.height);
+            // Karakterli logo: kafa ustten, ayak alttan tasar; harflerin goze carpan boyu ~34 px olsun
+            float h = 50, w = h * logo_.width / static_cast<float>(logo_.height);
             DrawTexturePro(logo_, { 0, 0, static_cast<float>(logo_.width), static_cast<float>(logo_.height) },
-                           { VW - 40 - w, 32, w, h }, { 0, 0 }, 0, WHITE);
+                           { VW - 40 - w, 22, w, h }, { 0, 0 }, 0, WHITE);
         } else {
             text(f_.bold, "KINEXT", VW - 40 - textWidth(f_.bold, "KINEXT", 34), 30, 34, WHITE);
         }
@@ -419,6 +420,12 @@ int main() {
     SetWindowMinSize(640, 360);
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);   // ESC pencereyi kapatmasin, menude geri gitsin
+    if (FileExists("assets/kinext_icon.png")) {   // pencere ikonu (sol ust kose, Alt+Tab)
+        Image icon = LoadImage("assets/kinext_icon.png");
+        ImageFormat(&icon, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+        SetWindowIcon(icon);
+        UnloadImage(icon);
+    }
 
     Fonts fonts;
     fonts.load();
