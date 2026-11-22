@@ -49,6 +49,9 @@ target_link_libraries(kinext_games PRIVATE kinext_core)
 
 add_executable(kinext_dashboard src/dash/dashboard_main.cpp)   # ana program: dashboard + magaza + oyunlar
 target_link_libraries(kinext_dashboard PRIVATE kinext_core raylib)
+if(WIN32)
+    target_sources(kinext_dashboard PRIVATE src/dash/kinext.rc)   # exe ikonu
+endif()
 add_custom_command(TARGET kinext_dashboard POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:kinext_dashboard>/assets)
 
