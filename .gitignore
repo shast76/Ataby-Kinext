@@ -1,0 +1,26 @@
+# Derleme ciktilari
+out/
+build/
+.vs/
+*.exe
+*.lib
+*.obj
+*.pdb
+
+# Buyuk / disaridan indirilen dosyalar (README'de nereden indirilecegi yazili)
+third_party/*
+!third_party/.gitkeep
+models/*.onnx
+*.zip
+*.nupkg
+
+# Medya: kayitlar ve ekran goruntuleri depoya girmez
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
