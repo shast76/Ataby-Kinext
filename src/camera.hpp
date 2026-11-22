@@ -36,6 +36,7 @@ public:
 
     int index() const { return index_; }
     int count() const { return static_cast<int>(names_.size()); }
+    const std::string& name(int i) const { return names_[i]; }
 
     // Sag ustte isimli butonlar; tiklanan kamera numarasini dondurur (yoksa -1)
     int drawButtons(cv::Mat& img, int clickX, int clickY, int top = 54) const {
