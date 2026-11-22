@@ -4,7 +4,7 @@
 </p>
 
 Kinect olmadan, sıradan bir webcam ile Kinect tarzı hareket oyunları.
-Hedef: PC (Windows/Linux), Baldic OS ve native Xbox (UWP / Dev Mode).
+Hedef: PC (Windows/Linux), Baldic OS, native Xbox (UWP / Dev Mode) ve Raspberry Pi 5 tabanlı Kinext konsolu.
 
 > Kinext, Microsoft ile bağlantılı değildir. "Kinect" ve "Xbox", Microsoft Corporation'ın ticari markalarıdır.
 
@@ -93,3 +93,4 @@ src/
 4. Gerçek Kinect desteği (SDK 1.8 / libfreenect)
 5. Xbox One tarzı dashboard
 6. Native Xbox sürümü (UWP, Dev Mode, MediaCapture + DirectML)
+7. Oyun konsolu sürümü: Raspberry Pi 5 + webcam ile TV'ye takılan, kendi başına çalışan Kinext konsolu
