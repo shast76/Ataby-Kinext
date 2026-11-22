@@ -13,6 +13,8 @@ else()
 endif()
 
 find_package(OpenCV REQUIRED COMPONENTS core imgproc highgui videoio)
+find_package(raylib CONFIG REQUIRED)
+find_package(Threads REQUIRED)
 
 find_path(ORT_INCLUDE onnxruntime_cxx_api.h
     HINTS ${ONNXRUNTIME_DIR}/include
@@ -26,9 +28,9 @@ find_library(ORT_LIB onnxruntime
     REQUIRED)
 
 # --- Kinext Core: poz tahmini + iskelet + jestler (oyunlarin ortak parcasi) ---
-add_library(kinext_core STATIC src/pose.cpp)
+add_library(kinext_core STATIC src/pose.cpp src/camera_list.cpp src/tracker.cpp)
 target_include_directories(kinext_core PUBLIC src ${ORT_INCLUDE} ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(kinext_core PUBLIC ${ORT_LIB} ${OpenCV_LIBS})
+target_link_libraries(kinext_core PUBLIC ${ORT_LIB} ${OpenCV_LIBS} Threads::Threads)
 if(USE_DIRECTML)
     target_compile_definitions(kinext_core PUBLIC USE_DIRECTML)
 endif()
@@ -42,11 +44,16 @@ endif()
 add_executable(kinext src/main.cpp)              # iskelet test araci
 target_link_libraries(kinext PRIVATE kinext_core)
 
-add_executable(kinext_games src/games_main.cpp)  # oyunlar
+add_executable(kinext_games src/games_main.cpp)  # eski OpenCV oyunlari (test icin)
 target_link_libraries(kinext_games PRIVATE kinext_core)
 
+add_executable(kinext_dashboard src/dash/dashboard_main.cpp)   # ana program: dashboard + magaza + oyunlar
+target_link_libraries(kinext_dashboard PRIVATE kinext_core raylib)
+add_custom_command(TARGET kinext_dashboard POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:kinext_dashboard>/assets)
+
 # Windows: onnxruntime.dll (+ DirectML.dll) ve modelleri exe'lerin yanina kopyala
-foreach(app kinext kinext_games)
+foreach(app kinext kinext_games kinext_dashboard)
     if(WIN32)
         get_filename_component(ORT_LIB_DIR ${ORT_LIB} DIRECTORY)
         file(GLOB ORT_DLLS "${ORT_LIB_DIR}/*.dll")
