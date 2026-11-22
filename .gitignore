@@ -24,3 +24,6 @@ models/*.onnx
 *.jpeg
 *.webp
 *.gif
+
+# Koddan cizilen tanitim gorselleri (gercek kamera goruntusu degil)
+!docs/images/*.png

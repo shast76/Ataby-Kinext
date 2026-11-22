@@ -5,6 +5,15 @@ Hedef: PC (Windows/Linux), Baldic OS ve native Xbox (UWP / Dev Mode).
 
 > Kinext, Microsoft ile bağlantılı değildir. "Kinect" ve "Xbox", Microsoft Corporation'ın ticari markalarıdır.
 
+<p align="center">
+  <img src="docs/images/menu.png" width="49%" alt="Kinext menü">
+  <img src="docs/images/balloon.png" width="49%" alt="Balon Patlat">
+  <img src="docs/images/dodge.png" width="49%" alt="Engelden Kaç">
+  <img src="docs/images/skeleton.png" width="49%" alt="20 eklemli iskelet">
+</p>
+
+<sub>Görseller temsilidir: oyunların görünümünü anlatmak için `docs/gen_images.py` ile koddan çizilmiştir, gerçek kamera görüntüsü içermez. Oyunda arka planda kamera görüntüsü karartılmış olarak görünür.</sub>
+
 ## Neler var
 
 **Kinext Core** (`kinext_core`): Webcam görüntüsü → MoveNet poz modeli (ONNX Runtime, Windows'ta DirectML ile GPU) → **Kinect v1 formatında 20 eklemli iskelet** → jest algılama.
