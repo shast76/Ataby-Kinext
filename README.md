@@ -1,4 +1,6 @@
-# Kinext 1.0
+<p align="center">
+  <img src="docs/images/kinext-logo.png" width="600" alt="Kinext 1.0">
+</p>
 
 Kinect olmadan, sıradan bir webcam ile Kinect tarzı hareket oyunları.
 Hedef: PC (Windows/Linux), Baldic OS ve native Xbox (UWP / Dev Mode).
