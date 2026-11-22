@@ -1,5 +1,6 @@
-<p align="center">
-  <img src="docs/images/kinext-logo.png" width="600" alt="Kinext 1.0">
+<p align="left">
+<img width="960" height="202" alt="Ataby Kinext final logo" src="https://github.com/user-attachments/assets/7bdf8f2a-19be-4e79-bfbd-68c2af71f605" />
+
 </p>
 
 Kinect olmadan, sıradan bir webcam ile Kinect tarzı hareket oyunları.
