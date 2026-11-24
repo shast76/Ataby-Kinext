@@ -28,7 +28,7 @@ find_library(ORT_LIB onnxruntime
     REQUIRED)
 
 # --- Kinext Core: poz tahmini + iskelet + jestler (oyunlarin ortak parcasi) ---
-add_library(kinext_core STATIC src/pose.cpp src/camera_list.cpp src/tracker.cpp)
+add_library(kinext_core STATIC src/pose.cpp src/camera_list.cpp src/tracker.cpp src/mjpeg.cpp)
 target_include_directories(kinext_core PUBLIC src ${ORT_INCLUDE} ${OpenCV_INCLUDE_DIRS})
 target_link_libraries(kinext_core PUBLIC ${ORT_LIB} ${OpenCV_LIBS} Threads::Threads)
 if(USE_DIRECTML)
@@ -36,7 +36,7 @@ if(USE_DIRECTML)
 endif()
 if(WIN32)
     # Kamera isimleri icin Media Foundation
-    target_link_libraries(kinext_core PUBLIC mfplat mf mfuuid ole32)
+    target_link_libraries(kinext_core PUBLIC mfplat mf mfuuid ole32 ws2_32)   # kamera adlari + telefon kamerasi (Wi-Fi)
     target_compile_definitions(kinext_core PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
 endif()
 

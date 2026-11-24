@@ -1,0 +1,25 @@
+Kinext 1.0 - Ucuncu taraf yazilim bildirimleri / Third-party notices
+=====================================================================
+
+Kinext, Microsoft ile baglantili degildir. "Kinect" ve "Xbox", Microsoft
+Corporation'in ticari markalaridir.
+Kinext is not affiliated with Microsoft. "Kinect" and "Xbox" are trademarks
+of Microsoft Corporation.
+
+Kinext asagidaki acik kaynak bilesenleri kullanir. Her bilesen kendi
+lisansina tabidir; tam lisans metinleri ilgili projelerin sitelerindedir.
+Kinext uses the following open-source components, each under its own license.
+
+- OpenCV ............................. Apache License 2.0      https://opencv.org
+- ONNX Runtime (DirectML) ............ MIT License             https://onnxruntime.ai
+- MoveNet SinglePose (Google) ......... Apache License 2.0      https://www.kaggle.com/models/google/movenet
+  ONNX donusumu / ONNX conversion: Xenova (Hugging Face)
+- raylib ............................. zlib/libpng License     https://www.raylib.com
+- GLFW ............................... zlib/libpng License     https://www.glfw.org
+- libjpeg-turbo ...................... IJG / BSD-3-Clause / zlib  https://libjpeg-turbo.org
+- libpng ............................. libpng License          http://www.libpng.org
+- zlib ............................... zlib License            https://zlib.net
+- libwebp ............................ BSD-3-Clause            https://chromium.googlesource.com/webm/libwebp
+- libtiff ............................ libtiff License (BSD-like)  https://libtiff.gitlab.io/libtiff
+- liblzma (XZ Utils) ................. 0BSD / Public Domain    https://tukaani.org/xz
+- Microsoft Visual C++ Runtime ....... Microsoft Software License Terms (redistributable)

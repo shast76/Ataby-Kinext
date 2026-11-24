@@ -11,8 +11,11 @@ inline const char* avatarName(int id) {
     return names[std::clamp(id, 0, AVATAR_COUNT - 1)];
 }
 inline const char* avatarDesc(int id) {
-    static const char* d[] = { "Neşeli küçük robot", "Turuncu tüylü dostun", "Uzay kaşifi" };
-    return d[std::clamp(id, 0, AVATAR_COUNT - 1)];
+    switch (std::clamp(id, 0, AVATAR_COUNT - 1)) {
+    case AVATAR_POFI:  return T("Turuncu tüylü dostun", "Your fluffy orange friend");
+    case AVATAR_ASTRO: return T("Uzay kaşifi", "Space explorer");
+    default:           return T("Neşeli küçük robot", "Cheerful little robot");
+    }
 }
 
 inline Vector2 jv(const Skeleton& s, Joint j) { return { s[j].x, s[j].y }; }

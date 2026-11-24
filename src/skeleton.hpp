@@ -70,7 +70,7 @@ struct Skeleton {
 inline Skeleton toKinect(const Keypoints& k, float minScore = 0.3f) {
     Skeleton sk;
     // Bacak noktalari kamerada daha dusuk guvenle gelir, onlar icin esik biraz daha dusuk
-    auto ok = [&](Coco c) { return k[c].score >= (c >= L_KNEE ? minScore * 0.6f : minScore); };
+    auto ok = [&](Coco c) { return k[c].score >= (c >= L_KNEE ? minScore * 0.5f : minScore); };
     auto set = [&](Joint j, float x, float y, TrackState st) { sk.joints[j] = { x, y, st }; };
     auto copy = [&](Joint j, Coco c) {
         set(j, k[c].x, k[c].y, ok(c) ? TrackState::Tracked : TrackState::NotTracked);
@@ -138,3 +138,76 @@ inline Skeleton smoothSkeleton(const Skeleton& prev, const Skeleton& cur) {
     }
     return out;
 }
+
+// --- One Euro filtresi (Casiez ve ark., 2012) ---
+// Yavas harekette guclu yumusatir (titreme yok), hizli harekette az yumusatir (gecikme yok).
+struct OneEuro {
+    float x = 0, dx = 0;
+    bool init = false;
+    static float alpha(float cutoff, float dt) {
+        float tau = 1.f / (2.f * 3.14159265f * cutoff);
+        return 1.f / (1.f + tau / dt);
+    }
+    float filter(float v, float dt, float minCutoff, float beta) {
+        if (!init) { init = true; x = v; dx = 0; return v; }
+        float d = (v - x) / dt;
+        dx += alpha(1.f, dt) * (d - dx);
+        float a = alpha(minCutoff + beta * std::fabs(dx), dt);
+        x += a * (v - x);
+        return x;
+    }
+};
+
+// Iskeleti kareden kareye kararli tutar:
+//  - her eklem One Euro ile filtrelenir (bacaklar daha guclu, cunku daha az hareket eder ve daha cok titrer)
+//  - bir eklem kisa sureligine kaybolursa (0,5 sn) son konumu tutulur: ayak "zipzip" yapmaz
+//  - dusuk guvenli bir eklemin tek karede asiri sicramasi yok sayilir
+class SkeletonFilter {
+public:
+    void reset() { *this = SkeletonFilter(); }
+
+    Skeleton apply(const Skeleton& in, float dt) {
+        dt = std::clamp(dt, 1.f / 120.f, 0.2f);
+        if (!in.valid) {
+            lostAll_ += dt;
+            if (lostAll_ < 0.15f && last_.valid) return last_;  // tek tuk kare kaybinda goruntuyu koru
+            reset();
+            return in;
+        }
+        lostAll_ = 0;
+        float t = (std::max)(in.torso(), 1.f);
+        torso_ = torso_ <= 0 ? t : torso_ + (t - torso_) * 0.05f;   // olcek de yavasca degissin
+        const float k = torso_;
+
+        Skeleton out = in;
+        for (int i = 0; i < JOINT_COUNT; ++i) {
+            const JointPos& j = in.joints[i];
+            bool legs = i >= HipLeft;   // HipLeft..FootRight
+            if (j.state == TrackState::NotTracked) {
+                lost_[i] += dt;
+                if (last_.valid && last_.joints[i].state != TrackState::NotTracked && lost_[i] < 0.25f)
+                    out.joints[i] = { last_.joints[i].x, last_.joints[i].y, TrackState::Inferred };
+                continue;
+            }
+            // Bacaklarda dusuk guvenli (tahmini) eklem tek karede govde boyunun %60'indan fazla ziplarsa: kotu olcum.
+            // Kollarda yapilmaz: hizli savurmalar (bowling, balon) gercek harekettir.
+            if (legs && j.state == TrackState::Inferred && last_.valid && last_.joints[i].state != TrackState::NotTracked && lost_[i] == 0) {
+                float jump = std::hypot(j.x - last_.joints[i].x, j.y - last_.joints[i].y) / k;
+                if (jump > 0.6f) { out.joints[i] = last_.joints[i]; continue; }
+            }
+            lost_[i] = 0;
+            // Govde birimine gore filtrele: kameraya yakin/uzak durmak ayari degistirmesin
+            float minCut = legs ? 1.0f : 1.4f, beta = legs ? 0.8f : 0.6f;
+            out.joints[i].x = fx_[i].filter(j.x / k, dt, minCut, beta) * k;
+            out.joints[i].y = fy_[i].filter(j.y / k, dt, minCut, beta) * k;
+        }
+        last_ = out;
+        return out;
+    }
+
+private:
+    std::array<OneEuro, JOINT_COUNT> fx_{}, fy_{};
+    std::array<float, JOINT_COUNT> lost_{};
+    Skeleton last_;
+    float torso_ = 0, lostAll_ = 0;
+};

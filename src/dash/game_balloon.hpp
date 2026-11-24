@@ -65,11 +65,11 @@ public:
         for (const auto& p : parts_) DrawCircleV(p.pos, 7.f * (p.life / 0.6f) + 1.f, p.color);
 
         int left = static_cast<int>(std::ceil((std::max)(0.f, DURATION - time_)));
-        topBar(c, "Puan " + std::to_string(score_), std::to_string(left), "Kaçan " + std::to_string(missed_));
+        topBar(c, T("Puan ", "Score ") + std::to_string(score_), std::to_string(left), T("Kaçan ", "Missed ") + std::to_string(missed_));
         if (!body.valid && !over_) waitingForPlayer(c);
-        else if (time_ < 2.5f) textCenterShadow(c.fonts.light, "Balonları ellerinle patlat!", VW / 2.f, VH * 0.18f, 46, WHITE);
+        else if (time_ < 2.5f) textCenterShadow(c.fonts.light, T("Balonları ellerinle patlat!", "Pop the balloons with your hands!"), VW / 2.f, VH * 0.18f, 46, WHITE);
 
-        if (over_) return resultScreen(c, "Süre doldu!", score_, best_ ? *best_ : score_);
+        if (over_) return resultScreen(c, T("Süre doldu!", "Time's up!"), score_, best_ ? *best_ : score_);
         return GameAction::None;
     }
 

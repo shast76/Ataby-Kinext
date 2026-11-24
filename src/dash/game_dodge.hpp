@@ -65,11 +65,11 @@ public:
 
         std::string hearts;
         for (int i = 0; i < 3; ++i) hearts += i < lives_ ? "● " : "○ ";
-        topBar(c, "Puan " + std::to_string(score()), "", "Can " + hearts);
+        topBar(c, T("Puan ", "Score ") + std::to_string(score()), "", T("Can ", "Lives ") + hearts);
         if (!body.valid && !over_) waitingForPlayer(c);
-        else if (time_ < 3.f && !over_) textCenterShadow(c.fonts.light, "Sağa sola kayarak kaç!", VW / 2.f, VH * 0.25f, 46, WHITE);
+        else if (time_ < 3.f && !over_) textCenterShadow(c.fonts.light, T("Sağa sola kayarak kaç!", "Lean left and right to dodge!"), VW / 2.f, VH * 0.25f, 46, WHITE);
 
-        if (over_) return resultScreen(c, "Oyun bitti!", score(), best_ ? *best_ : score());
+        if (over_) return resultScreen(c, T("Oyun bitti!", "Game over!"), score(), best_ ? *best_ : score());
         return GameAction::None;
     }
 

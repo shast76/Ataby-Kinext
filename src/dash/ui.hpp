@@ -1,6 +1,7 @@
 // Kinext 1.0 Dashboard - tema, yazi tipleri, el imleci ve secim (hover) sistemi
 #pragma once
 #include "../skeleton.hpp"
+#include "lang.hpp"
 #include "raylib.h"
 #include <algorithm>
 #include <cmath>
@@ -10,18 +11,21 @@
 constexpr int VW = 1280, VH = 720;   // sanal cozunurluk: pencere ne olursa olsun buna gore cizilir
 
 // --- Vurgu renkleri (Xbox One'daki gibi kullanici secer) ---
-struct AccentColor { const char* name; Color color; };
+struct AccentColor {
+    const char* tr; const char* en; Color color;
+    const char* name() const { return T(tr, en); }
+};
 inline const AccentColor ACCENTS[] = {
-    { "Mavi",       {   0, 120, 215, 255 } },
-    { "Yeşil",      {  16, 124,  16, 255 } },
-    { "Kırmızı",    { 200,  30,  45, 255 } },
-    { "Turuncu",    { 225, 105,  20, 255 } },
-    { "Pembe",      { 225,   0, 135, 255 } },
-    { "Mor",        { 120,  50, 190, 255 } },
-    { "Turkuaz",    {   0, 145, 155, 255 } },
-    { "Sarı",       { 205, 160,   0, 255 } },
-    { "Kahverengi", { 135,  85,  45, 255 } },
-    { "Gri",        {  95,  98, 110, 255 } },
+    { "Mavi", "Blue",           {   0, 120, 215, 255 } },
+    { "Yeşil", "Green",         {  16, 124,  16, 255 } },
+    { "Kırmızı", "Red",         { 200,  30,  45, 255 } },
+    { "Turuncu", "Orange",      { 225, 105,  20, 255 } },
+    { "Pembe", "Pink",          { 225,   0, 135, 255 } },
+    { "Mor", "Purple",          { 120,  50, 190, 255 } },
+    { "Turkuaz", "Teal",        {   0, 145, 155, 255 } },
+    { "Sarı", "Yellow",         { 205, 160,   0, 255 } },
+    { "Kahverengi", "Brown",    { 135,  85,  45, 255 } },
+    { "Gri", "Gray",            {  95,  98, 110, 255 } },
 };
 constexpr int ACCENT_COUNT = sizeof(ACCENTS) / sizeof(ACCENTS[0]);
 
@@ -85,8 +89,11 @@ public:
     // Imleci yoneten el: 0 = otomatik (hangisi yukaridaysa), 1 = sol el, 2 = sag el
     enum HandMode { HAND_AUTO = 0, HAND_LEFT = 1, HAND_RIGHT = 2 };
     static const char* handModeName(int m) {
-        static const char* n[] = { "Otomatik", "Sol el", "Sağ el" };
-        return n[std::clamp(m, 0, 2)];
+        switch (std::clamp(m, 0, 2)) {
+        case 1:  return T("Sol el", "Left hand");
+        case 2:  return T("Sağ el", "Right hand");
+        default: return T("Otomatik", "Automatic");
+        }
     }
     void setHandMode(int m) { handMode_ = std::clamp(m, 0, 2); }
 
@@ -214,36 +221,62 @@ private:
     // Otomatik modda el, digeri belirgin sekilde daha yukari kalkmadikca degismez (imlec ziplamasin).
     bool pickHand(const Skeleton& n, Vector2& out) {
         const float t = (std::max)(n.torso(), 0.05f);
-        const JointPos& hip = n[HipCenter];
-        auto usable = [&](Joint j) { return n[j].state != TrackState::NotTracked && n[j].y < hip.y - t * 0.1f; };
-        bool l = usable(HandLeft) && handMode_ != HAND_RIGHT;
-        bool r = usable(HandRight) && handMode_ != HAND_LEFT;
+        // Imlec ancak el kaldirilinca cikar (Kinect'teki gibi): dinlenirken ekranin altinda sahipsiz bir el durmasin.
+        // Kalibrasyon varsa, olculen alt noktanin biraz altina kadar izin verilir.
+        float activeLimit = cal_.valid ? (std::min)(cal_.br.y + 0.2f, 0.95f) : 0.75f;   // omuz merkezine gore, govde birimi
+        auto usable = [&](Joint j) {
+            return n[j].state != TrackState::NotTracked && (n[j].y - n[ShoulderCenter].y) / t < activeLimit;
+        };
+        bool l = usable(WristLeft) && handMode_ != HAND_RIGHT;
+        bool r = usable(WristRight) && handMode_ != HAND_LEFT;
         if (!l && !r) return false;
 
         int want = activeHand_;
         if (want == 0 && !l) want = -1;
         if (want == 1 && !r) want = -1;
-        if (want < 0) want = (l && r) ? (n[HandLeft].y < n[HandRight].y ? 0 : 1) : (l ? 0 : 1);
+        if (want < 0) want = (l && r) ? (n[WristLeft].y < n[WristRight].y ? 0 : 1) : (l ? 0 : 1);
         else if (l && r) {
             // Diger el, aktif elden en az 0.35 govde boyu yukaridaysa gecis yap
-            Joint other = want == 0 ? HandRight : HandLeft, cur = want == 0 ? HandLeft : HandRight;
+            Joint other = want == 0 ? WristRight : WristLeft, cur = want == 0 ? WristLeft : WristRight;
             if (n[other].y < n[cur].y - t * 0.35f) want = 1 - want;
         }
         if (want != activeHand_) handSeen_ = false;   // el degisti: yumusatmayi yeni konumdan baslat
         activeHand_ = want;
 
-        // Kinect'teki gibi her elin kendi omzu etrafinda bir etkilesim kutusu var:
-        // kolu cok uzatmadan, rahat bir hareketle tum ekrana ulasilir
-        const JointPos& hand = n[want == 0 ? HandLeft : HandRight];
-        const JointPos& sh = n[want == 0 ? ShoulderLeft : ShoulderRight];
-        float side = want == 0 ? -1.f : 1.f;
-        float cx = sh.x + side * t * 0.2f;           // kutunun merkezi: omzun biraz disi
-        float cy = n[ShoulderCenter].y + t * 0.15f;  // gogus hizasi
-        float u = 0.5f + (hand.x - cx) / (t * 1.5f);
-        float v = 0.5f + (hand.y - cy) / (t * 1.1f);
+        float u, v;
+        Vector2 rel = handRel(n, want);
+        if (cal_.valid) {
+            // Kalibrasyon: oyuncunun kendi rahat alani ekranin tamamina eslenir.
+            // Diger elle olculduyse yatay eksen aynalanir.
+            float tlx = cal_.tl.x, brx = cal_.br.x;
+            if (want != cal_.side) { tlx = -cal_.br.x; brx = -cal_.tl.x; }
+            u = (rel.x - tlx) / (brx - tlx);
+            v = (rel.y - cal_.tl.y) / (cal_.br.y - cal_.tl.y);
+        } else {
+            // Varsayilan: Kinect'teki gibi her elin kendi omzu etrafinda bir etkilesim kutusu
+            float side = want == 0 ? -1.f : 1.f;
+            u = 0.5f + (rel.x - side * 0.2f) / 1.5f;
+            v = 0.5f + (rel.y - 0.15f) / 1.1f;
+        }
         out = { std::clamp(u, 0.f, 1.f) * VW, std::clamp(v, 0.f, 1.f) * VH };
         return true;
     }
+
+public:
+    // Elin, kendi omzuna gore konumu (govde boyu biriminde). y icin omuz merkezi referans.
+    // Bilek kullanilir: "el" noktasi dirsek->bilek cizgisinin uzatilmasiyla tahmin edildigi icin titremeyi buyutur.
+    static Vector2 handRel(const Skeleton& n, int side) {
+        const float t = (std::max)(n.torso(), 0.05f);
+        const JointPos& hand = n[side == 0 ? WristLeft : WristRight];
+        const JointPos& sh = n[side == 0 ? ShoulderLeft : ShoulderRight];
+        return { (hand.x - sh.x) / t, (hand.y - n[ShoulderCenter].y) / t };
+    }
+    struct Calibration { bool valid = false; int side = 1; Vector2 tl{}, br{}; };
+    void setCalibration(const Calibration& c) { cal_ = c; }
+    int activeHand() const { return activeHand_; }
+
+private:
+    Calibration cal_;
 
     int handMode_ = HAND_AUTO, activeHand_ = -1;
     float lostTime_ = 0, graceTime_ = 0, speed_ = 0;
@@ -256,7 +289,7 @@ private:
 };
 
 // --- Basit cizim ikonlari (tum ikonlar koddan cizilir) ---
-enum class Icon { None, Games, Store, Settings, Camera, Avatar, Power, Color, Play, Hand, Reset };
+enum class Icon { None, Games, Store, Settings, Camera, Avatar, Power, Color, Play, Hand, Reset, Target, Phone, Globe };
 
 inline void drawIcon(Icon icon, Vector2 c, float s, Color col) {
     switch (icon) {
@@ -302,6 +335,30 @@ inline void drawIcon(Icon icon, Vector2 c, float s, Color col) {
         for (int i = 0; i < 4; ++i)
             DrawRectangleRounded({ c.x - s * 0.3f + i * s * 0.155f, c.y - s * 0.45f + (i == 0 || i == 3 ? s * 0.08f : 0), s * 0.13f, s * 0.5f }, 0.5f, 6, col);
         DrawLineEx({ c.x - s * 0.25f, c.y + s * 0.15f }, { c.x - s * 0.48f, c.y - s * 0.08f }, s * 0.13f, col);
+        break;
+    case Icon::Target:  // hedef: kalibrasyon
+        DrawRing(c, s * 0.34f, s * 0.44f, 0, 360, 40, col);
+        DrawRing(c, s * 0.14f, s * 0.23f, 0, 360, 32, col);
+        DrawRectangleRec({ c.x - s * 0.04f, c.y - s * 0.6f, s * 0.08f, s * 0.26f }, col);
+        DrawRectangleRec({ c.x - s * 0.04f, c.y + s * 0.34f, s * 0.08f, s * 0.26f }, col);
+        DrawRectangleRec({ c.x - s * 0.6f, c.y - s * 0.04f, s * 0.26f, s * 0.08f }, col);
+        DrawRectangleRec({ c.x + s * 0.34f, c.y - s * 0.04f, s * 0.26f, s * 0.08f }, col);
+        break;
+    case Icon::Phone:   // telefon + kamera gozu
+        DrawRectangleRounded({ c.x - s * 0.27f, c.y - s * 0.5f, s * 0.54f, s * 1.0f }, 0.25f, 8, col);
+        DrawRectangleRounded({ c.x - s * 0.2f, c.y - s * 0.36f, s * 0.4f, s * 0.68f }, 0.1f, 6, ColorAlpha(BLACK, 0.35f));
+        DrawCircleV({ c.x, c.y - s * 0.43f }, s * 0.035f, ColorAlpha(BLACK, 0.5f));
+        DrawRing({ c.x, c.y - s * 0.02f }, s * 0.08f, s * 0.13f, 0, 360, 24, col);
+        break;
+    case Icon::Globe:   // dunya: dil
+        DrawRing(c, s * 0.4f, s * 0.48f, 0, 360, 40, col);
+        DrawRing(c, s * 0.0f, s * 0.04f, 0, 360, 8, col);
+        DrawEllipseLines(static_cast<int>(c.x), static_cast<int>(c.y), s * 0.2f, s * 0.44f, col);
+        DrawEllipseLines(static_cast<int>(c.x), static_cast<int>(c.y), s * 0.21f, s * 0.45f, col);
+        DrawRectangleRec({ c.x - s * 0.44f, c.y - s * 0.025f, s * 0.88f, s * 0.05f }, col);
+        DrawRectangleRec({ c.x - s * 0.025f, c.y - s * 0.44f, s * 0.05f, s * 0.88f }, col);
+        DrawRectangleRec({ c.x - s * 0.36f, c.y - s * 0.24f, s * 0.72f, s * 0.04f }, col);
+        DrawRectangleRec({ c.x - s * 0.36f, c.y + s * 0.2f, s * 0.72f, s * 0.04f }, col);
         break;
     case Icon::Reset:   // geri donen ok
         DrawRing(c, s * 0.3f, s * 0.41f, 40, 330, 32, col);

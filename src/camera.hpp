@@ -1,9 +1,11 @@
 // Kinext 1.0 - kamera yonetimi (acma, degistirme, isimli butonlar)
 #pragma once
 #include "camera_list.hpp"
+#include "mjpeg.hpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -14,8 +16,24 @@ public:
         if (names_.empty()) for (int i = 0; i < 4; ++i) names_.push_back("Kamera " + std::to_string(i));
     }
 
+    // Telefon kamerasi (Wi-Fi uzerinden MJPEG). Basarili olursa normal kamera kapatilir.
+    bool openPhone(const std::string& address) {
+        auto p = std::make_unique<MjpegStream>();
+        if (!p->open(address)) { phoneError_ = p->error(); return false; }
+        cam_.release();
+        phone_ = std::move(p);
+        phoneError_.clear();
+        std::cout << "Telefon kamerasi acildi: " << phone_->url() << "\n";
+        return true;
+    }
+    void closePhone() { phone_.reset(); }
+    bool usingPhone() const { return phone_ != nullptr; }
+    const std::string& phoneError() const { return phoneError_; }
+    std::string phoneUrl() const { return phone_ ? phone_->url() : std::string(); }
+
     // Kamerayi acar; acilamazsa onceki kameraya geri doner
     bool open(int index) {
+        phone_.reset();
         int prev = index_;
         cam_.release();   // bazi kameralar/USB portlari iki akisi ayni anda kaldiramaz
         if (tryOpen(index)) { index_ = index; std::cout << "Kamera acildi: " << names_[index] << "\n"; return true; }
@@ -32,9 +50,16 @@ public:
         for (int s = 1; s <= count(); ++s) if (open(((index_ < 0 ? 0 : index_) + s) % count())) return true;
         return false;
     }
-    bool read(cv::Mat& f) { return cam_.read(f) && !f.empty(); }
+    bool read(cv::Mat& f) {
+        if (phone_) {
+            if (phone_->read(f)) return true;
+            phoneError_ = phone_->error();
+            return false;
+        }
+        return cam_.read(f) && !f.empty();
+    }
 
-    int index() const { return index_; }
+    int index() const { return phone_ ? -1 : index_; }
     int count() const { return static_cast<int>(names_.size()); }
     const std::string& name(int i) const { return names_[i]; }
 
@@ -79,6 +104,8 @@ private:
     }
 
     cv::VideoCapture cam_;
+    std::unique_ptr<MjpegStream> phone_;
+    std::string phoneError_;
     std::vector<std::string> names_;
     int index_ = -1;
 };
