@@ -30,3 +30,8 @@ models/*.onnx
 
 !assets/*.png
 !assets/*.ico
+
+# Kurulum sihirbazi ciktilari
+dist/
+installer/Output/
+installer/redist/

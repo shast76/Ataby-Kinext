@@ -1,113 +1,136 @@
-<p align="center">
-  <img src="docs/images/kinext-logo.png" width="640" alt="Ataby Kinext logosu">
+<p align="left">
+  <img src="docs/images/kinext-logo.png" width="640" alt="Ataby Kinext logo">
 </p>
 
-Kinect olmadan, sıradan bir webcam ile Kinect tarzı hareket oyunları.
-Hedef: PC (Windows/Linux), Baldic OS, native Xbox (UWP / Dev Mode) ve Raspberry Pi 5 tabanlı Kinext konsolu.
+Kinect-style motion games with an ordinary webcam, no Kinect required.
+Targets: PC (Windows/Linux), Baldic OS, native Xbox (UWP / Dev Mode) and a Raspberry Pi 5 based Kinext console.
 
-> Kinext, Microsoft ile bağlantılı değildir. "Kinect" ve "Xbox", Microsoft Corporation'ın ticari markalarıdır.
+> Kinext is not affiliated with Microsoft. "Kinect" and "Xbox" are trademarks of Microsoft Corporation.
 
 <p align="center">
-  <img src="docs/images/home.png" width="49%" alt="Kinext Dashboard ana sayfa">
-  <img src="docs/images/avatar.png" width="49%" alt="Maskot seçimi">
-  <img src="docs/images/balloon.png" width="49%" alt="Balon Patlat">
-  <img src="docs/images/dodge.png" width="49%" alt="Engelden Kaç">
+  <img src="docs/images/home.png" width="49%" alt="Kinext Dashboard home">
+  <img src="docs/images/avatar.png" width="49%" alt="Mascot selection">
+  <img src="docs/images/balloon.png" width="49%" alt="Balloon Pop">
+  <img src="docs/images/dodge.png" width="49%" alt="Dodge">
+  <img src="docs/images/store.png" width="49%" alt="Store">
+  <img src="docs/images/settings.png" width="49%" alt="Settings">
 </p>
 
-<sub>Ekran görüntüleri programın kendisinden alınmıştır; kamera yerine el sallayan sahte bir oyuncu verisi kullanılmıştır, gerçek kamera görüntüsü içermez.</sub>
+<sub>Screenshots are taken from the program itself using simulated player data instead of a camera; they contain no real camera footage.</sub>
 
-## Neler var
+## Download
 
-**Kinext Core** (`kinext_core`): Webcam görüntüsü → MoveNet poz modeli (ONNX Runtime, Windows'ta DirectML ile GPU) → **Kinect v1 formatında 20 eklemli iskelet** → jest algılama.
+Get **Kinext-1.0-Setup.exe** from the [Releases](https://github.com/shast76/Project-Kinext/releases) page and run it.
+The installer includes everything (models, libraries, Visual C++ runtime).
 
-- Kinect SDK 1.8'deki eklem adları ve sırası (`HipCenter` … `FootRight`)
-- Kişiye odaklı kırpma: model her karede oyuncunun bulunduğu bölgeye yakınlaşır, bacak ve ayak takibi çok daha iyi olur
-- Titreme önleyici yumuşatma (hızlı hareketlerde gecikme yapmaz)
-- Jestler: sol/sağ/iki el yukarı, sağa/sola eğilme, zıplama, sağ eli hızla savurma
-- Kamera seçimi: Windows'taki kamera adlarıyla sağ üstte butonlar, `C` tuşu ile sıradaki kamera
+**Requirements:** Windows 10/11 64-bit, a webcam (or your phone's camera). A DirectX 12 capable GPU is recommended; without one, tracking runs on the CPU.
 
-**Kinext Dashboard** (`kinext_dashboard.exe`, ana program): Xbox One (2013–2015) tarzı ana ekran.
+## Features
 
-- **Ana Sayfa · Oyunlar · Mağaza · Ayarlar** sekmeleri, Metro kutuları, seçilebilir vurgu rengi
-- **El ile kontrol:** elini kaldır, yarı saydam el imlecini bir kutunun üstünde tut, halka dolunca seçilir (fare de çalışır)
-- Kontrol eli seçimi (otomatik / sol / sağ), kamera seçimi, tam ekran, ayarları sıfırlama
-- **Maskotlar:** oyunlarda kamera görüntüsü yerine seçtiğin maskot olarak görünürsün: **Robo**, **Pofi**, **Astro**
-- Kamera ve poz takibi arka planda ayrı bir iş parçacığında çalışır, arayüz akıcı kalır
-- Çizim: [raylib](https://www.raylib.com/)
+**Kinext Core** (`kinext_core`): webcam image → MoveNet pose model (ONNX Runtime, GPU via DirectML on Windows) → **20-joint skeleton in Kinect v1 format** → gesture detection.
 
-**Oyunlar**
+- Joint names and order from Kinect SDK 1.8 (`HipCenter` … `FootRight`)
+- Person-focused cropping: the model zooms in on the player every frame, giving much better leg and foot tracking
+- One Euro filter smoothing: removes jitter without lag on fast movements
+- Gestures: left/right/both hands up, lean left/right, jump, fast right-hand swipe
 
-- 🎈 **Balon Patlat**: yükselen balonları ellerinle patlat (60 saniye, zamanla hızlanır)
-- 🧱 **Engelden Kaç**: 3 şeritte düşen bloklardan sağa-sola kayarak kaç (3 can)
-- Mağazada yakında: Bowling, Pozu Tut, Kaleci
+**Kinext Dashboard** (`kinext_dashboard.exe`, the main app): an Xbox One (2013–2015) style home screen.
 
-**Diğer programlar** (geliştirme/test için)
+- **Home · Games · Store · Settings** tabs, Metro tiles, selectable accent color
+- **Hand control:** raise your hand, hold the translucent hand cursor over a tile until the ring fills (mouse works too)
+- **Calibration:** tell Kinext how far you can comfortably reach, so the cursor covers the whole screen
+- **Phone camera:** use your phone as the camera over Wi-Fi (IP Webcam etc.) or with a webcam app
+- **Turkish and English** interface
+- Control hand (auto / left / right), camera selection, full screen, settings reset
+- **Mascots:** in games you appear as your chosen mascot instead of the camera image: **Robo**, **Pofi**, **Astro**
+- Camera and pose tracking run on a background thread, so the UI stays smooth
+- Rendering: [raylib](https://www.raylib.com/)
 
-| Program | Ne yapar |
+**Games**
+
+- 🎈 **Balloon Pop**: pop the rising balloons with your hands (60 seconds, speeds up over time)
+- 🧱 **Dodge**: lean left and right to dodge blocks falling in 3 lanes (3 lives)
+- Coming soon in the Store: Bowling, Strike a Pose, Goalkeeper
+
+**Other programs** (for development/testing)
+
+| Program | What it does |
 |---|---|
-| `kinext.exe` | İskelet test aracı: kamera görüntüsü üstünde eklemleri ve jestleri gösterir, `J` ile JSON çıktısı verir. |
-| `kinext_games.exe` | İlk OpenCV oyun sürümü (kamera görüntüsü üstünde). |
+| `kinext.exe` | Skeleton test tool: shows joints and gestures over the camera image, `J` prints JSON. |
+| `kinext_games.exe` | The first OpenCV game prototype (over the camera image). |
 
-## Gerekenler (Windows)
+## Building from source (Windows)
 
-1. **Visual Studio 2022+**: "C++ ile masaüstü geliştirme" iş yükü; *C++ CMake araçları* ve *vcpkg paket yöneticisi* bileşenleri seçili olsun.
-2. **ONNX Runtime (DirectML)**: nuget.org'dan **Microsoft.ML.OnnxRuntime.DirectML** paketini indir (`.nupkg` aslında bir zip dosyası).
-   Uzantısını `.zip` yapıp içini `third_party/onnxruntime/` klasörüne çıkar.
-3. **Model**: Hugging Face'teki `Xenova/movenet-singlepose-lightning` deposundan `onnx/model.onnx` dosyasını indir,
-   `models/movenet_lightning.onnx` olarak kaydet.
-   Daha isabetli takip için isteğe bağlı: `Xenova/movenet-singlepose-thunder` → `models/movenet_thunder.onnx` (varsa otomatik kullanılır).
+### Requirements
 
-OpenCV ve raylib'i elle kurmana gerek yok; `vcpkg.json` sayesinde Visual Studio ilk açılışta kendisi indirip derler (ilk sefer 15–40 dakika sürebilir).
+1. **Visual Studio 2022+** with the "Desktop development with C++" workload; make sure *C++ CMake tools* and *vcpkg package manager* are selected.
+2. **ONNX Runtime (DirectML)**: download the **Microsoft.ML.OnnxRuntime.DirectML** package from nuget.org (a `.nupkg` is just a zip file).
+   Rename it to `.zip` and extract it into `third_party/onnxruntime/`.
+3. **Model**: download `onnx/model.onnx` from the `Xenova/movenet-singlepose-lightning` repository on Hugging Face
+   and save it as `models/movenet_lightning.onnx`.
+   Optional, for more accurate tracking: `Xenova/movenet-singlepose-thunder` → `models/movenet_thunder.onnx` (used automatically if present).
 
-## Derleme ve çalıştırma
+You don't need to install OpenCV or raylib yourself: thanks to `vcpkg.json`, Visual Studio downloads and builds them on first open (the first time can take 15–40 minutes).
 
-1. Visual Studio → **Klasör aç** → bu klasörü seç
-2. Yapılandırma olarak **Kinext - Windows x64** seçili olsun; CMake ve vcpkg işini bitirene kadar bekle
-3. Başlangıç öğesi olarak **kinext_dashboard.exe**'yi seç
-4. **Ctrl+Shift+B** ile derle, ▶ ile çalıştır
+### Build and run
 
-Kamerayı TV'nin üstüne ya da göğüs-baş hizasına koy, 2–3 metre geride, tüm vücudun görünecek şekilde dur.
+1. Visual Studio → **Open a local folder** → select this folder
+2. Select the **Kinext - Windows x64** configuration and wait for CMake and vcpkg to finish
+3. Choose **kinext_dashboard.exe** as the startup item
+4. Build with **Ctrl+Shift+B**, run with ▶
 
-### Tuşlar
+Place the camera on top of the TV or at chest/head height, and stand 2–3 meters back so your whole body is visible.
 
-| Tuş | kinext_dashboard | kinext |
+### Building the installer
+
+1. Install [Inno Setup](https://jrsoftware.org/isdl.php) 6 or 7
+2. Build `kinext_dashboard.exe` in Release
+3. Run `installer\build_installer.bat` → `installer\Output\Kinext-1.0-Setup.exe`
+
+### Keys
+
+| Key | kinext_dashboard | kinext |
 |---|---|---|
-| `ESC` | Oyundan çık / ana sayfaya dön | Çıkış |
-| `F11` | Tam ekran | |
-| `C` | | Sıradaki kamera |
-| `M` | | Aynalamayı aç/kapa |
-| `J` | | İskeleti JSON olarak yazdır |
+| `ESC` | Quit game / back to home | Quit |
+| `F11` | Full screen | |
+| `C` | | Next camera |
+| `M` | | Toggle mirroring |
+| `J` | | Print skeleton as JSON |
 
-Ayarlar ve rekorlar exe'nin yanındaki `kinext_settings.txt` dosyasında tutulur.
+Settings and high scores are stored in `%APPDATA%\Kinext\kinext_settings.txt`.
 
-## Proje yapısı
+## Project structure
 
 ```
 src/
-  skeleton.hpp      Kinect formatında iskelet + yumuşatma
-  pose.hpp/.cpp     MoveNet ile poz tahmini (ONNX Runtime + DirectML), kişiye odaklı kırpma
-  gestures.hpp      Jest algılama
-  camera_list.*     Windows kamera adları (Media Foundation)
-  camera.hpp        Kamera açma/değiştirme
-  tracker.*         Kamera + poz takibini arka planda çalıştırır
+  skeleton.hpp      Kinect-format skeleton + One Euro filter
+  pose.hpp/.cpp     MoveNet pose estimation (ONNX Runtime + DirectML), person-focused crop
+  gestures.hpp      Gesture detection
+  camera_list.*     Windows camera names (Media Foundation)
+  camera.hpp        Opening/switching cameras
+  mjpeg.*           Phone camera over Wi-Fi (MJPEG stream)
+  tracker.*         Runs camera + pose tracking in the background
   dash/             Dashboard (raylib)
-    dashboard_main.cpp  Sahneler: ilk kurulum, sekmeler, oyunlar
-    ui.hpp          Tema, yazı tipleri, el imleci ve seçim sistemi
-    avatar.hpp      Maskotlar (Robo, Pofi, Astro)
-    games.hpp       Oyun altyapısı, mağaza kataloğu, kapaklar
+    dashboard_main.cpp  Scenes: first-run setup, tabs, calibration, phone, games
+    ui.hpp          Theme, fonts, hand cursor and selection system
+    lang.hpp        Turkish / English texts
+    avatar.hpp      Mascots (Robo, Pofi, Astro)
+    games.hpp       Game framework, store catalog, covers
     game_balloon.hpp, game_dodge.hpp
-    settings.hpp    Ayarlar ve rekorlar
-  main.cpp          İskelet test aracı (kinext.exe)
-  games_main.cpp, games/   İlk OpenCV oyunları (kinext_games.exe)
-assets/             Beyaz logo
+    settings.hpp    Settings and high scores
+  main.cpp          Skeleton test tool (kinext.exe)
+  games_main.cpp, games/   First OpenCV games (kinext_games.exe)
+installer/          Inno Setup script and wizard images
+assets/             Logo and app icon
 ```
 
-## Yol haritası
+## Roadmap
 
-1. ✅ Webcam ile iskelet takibi + jestler
-2. ✅ İlk küçük oyunlar (Balon Patlat, Engelden Kaç)
-3. ✅ Xbox One tarzı dashboard, mağaza ve maskotlar
-4. Daha fazla oyun (bowling, poz taklidi, kaleci…)
-5. Gerçek Kinect desteği (SDK 1.8 / libfreenect)
-6. Native Xbox sürümü (UWP, Dev Mode, MediaCapture + DirectML)
-7. Oyun konsolu sürümü: Raspberry Pi 5 + webcam ile TV'ye takılan, kendi başına çalışan Kinext konsolu
+1. ✅ Webcam skeleton tracking + gestures
+2. ✅ First small games (Balloon Pop, Dodge)
+3. ✅ Xbox One style dashboard, store and mascots
+4. ✅ Calibration, phone camera, Turkish/English, installer
+5. More games (bowling, pose matching, goalkeeper…)
+6. Real Kinect support (SDK 1.8 / libfreenect)
+7. Native Xbox version (UWP, Dev Mode, MediaCapture + DirectML)
+8. Game console version: a standalone Kinext console with a Raspberry Pi 5 + webcam that plugs into your TV

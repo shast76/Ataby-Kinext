@@ -28,17 +28,19 @@ public:
 // --- Katalog: magazada gorunen tum oyunlar ---
 struct GameInfo {
     const char* id;
-    const char* title;
-    const char* desc;
+    const char* titleTr; const char* titleEn;
+    const char* descTr;  const char* descEn;
     bool installed;
+    const char* title() const { return T(titleTr, titleEn); }
+    const char* desc() const { return T(descTr, descEn); }
 };
 inline const std::vector<GameInfo>& catalog() {
     static const std::vector<GameInfo> list = {
-        { "balloon", "Balon Patlat",  "Yükselen balonları ellerinle patlat",   true  },
-        { "dodge",   "Engelden Kaç",  "Sağa sola kayarak bloklardan kaç",      true  },
-        { "bowling", "Bowling",       "Kolunu savur, lobutları devir",         false },
-        { "pose",    "Pozu Tut",      "Ekrandaki pozu taklit et",              false },
-        { "keeper",  "Kaleci",        "Gelen toplara uzan, gol yeme",          false },
+        { "balloon", "Balon Patlat", "Balloon Pop",  "Yükselen balonları ellerinle patlat", "Pop balloons with your hands", true  },
+        { "dodge",   "Engelden Kaç", "Dodge",        "Sağa sola kayarak bloklardan kaç",    "Lean left and right to dodge", true  },
+        { "bowling", "Bowling",      "Bowling",      "Kolunu savur, lobutları devir",       "Swing your arm, knock pins down",     false },
+        { "pose",    "Pozu Tut",     "Strike a Pose","Ekrandaki pozu taklit et",            "Copy the pose on screen",                 false },
+        { "keeper",  "Kaleci",       "Goalkeeper",   "Gelen toplara uzan, gol yeme",        "Stop the shots with your body",      false },
     };
     return list;
 }
@@ -121,10 +123,10 @@ inline GameAction resultScreen(GameContext& c, const std::string& title, int sco
     DrawRectangle(0, 0, VW, VH, { 0, 0, 0, 170 });
     textCenterShadow(c.fonts.light, title, VW / 2.f, VH * 0.2f, 72, WHITE);
     textCenterShadow(c.fonts.bold, std::to_string(score), VW / 2.f, VH * 0.34f, 96, { 255, 215, 80, 255 });
-    textCenter(c.fonts.regular, score >= best && score > 0 ? "Yeni rekor!" : "En iyi: " + std::to_string(best),
+    textCenter(c.fonts.regular, score >= best && score > 0 ? T("Yeni rekor!", "New record!") : T("En iyi: ", "Best: ") + std::to_string(best),
                VW / 2.f, VH * 0.52f, 28, { 220, 220, 230, 255 });
-    if (gameButton(c, "res_again", { VW / 2.f - 290, VH * 0.64f, 270, 84 }, "Tekrar", c.accent)) return GameAction::Restart;
-    if (gameButton(c, "res_menu", { VW / 2.f + 20, VH * 0.64f, 270, 84 }, "Ana Sayfa", { 70, 72, 80, 255 })) return GameAction::Exit;
+    if (gameButton(c, "res_again", { VW / 2.f - 290, VH * 0.64f, 270, 84 }, T("Tekrar", "Again"), c.accent)) return GameAction::Restart;
+    if (gameButton(c, "res_menu", { VW / 2.f + 20, VH * 0.64f, 270, 84 }, T("Ana Sayfa", "Home"), { 70, 72, 80, 255 })) return GameAction::Exit;
     return GameAction::None;
 }
 
@@ -137,5 +139,5 @@ inline void topBar(GameContext& c, const std::string& left, const std::string& m
 
 inline void waitingForPlayer(GameContext& c) {
     DrawRectangle(0, VH / 2 - 60, VW, 120, { 0, 0, 0, 140 });
-    textCenter(c.fonts.light, "Kameranın önüne geç", VW / 2.f, VH / 2.f - 30, 52, WHITE);
+    textCenter(c.fonts.light, T("Kameranın önüne geç", "Step in front of the camera"), VW / 2.f, VH / 2.f - 30, 52, WHITE);
 }
