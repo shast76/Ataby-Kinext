@@ -3,14 +3,24 @@
 // Tum maskotlar Kinext'e ozgu, tamamen koddan cizilir.
 #pragma once
 #include "ui.hpp"
+#include "characters.hpp"
 
+// 0-2: hazir maskotlar, 3 ve sonrasi: kullanicinin kendi karakterleri (characters klasoru)
 enum AvatarId { AVATAR_ROBO, AVATAR_POFI, AVATAR_ASTRO, AVATAR_COUNT };
+inline int avatarCount() { return AVATAR_COUNT + CharacterLibrary::get().count(); }
+inline const CustomCharacter* customAvatar(int id) {
+    int i = id - AVATAR_COUNT;
+    const auto& l = CharacterLibrary::get().list();
+    return (i >= 0 && i < static_cast<int>(l.size())) ? &l[i] : nullptr;
+}
 
-inline const char* avatarName(int id) {
+inline std::string avatarName(int id) {
+    if (const CustomCharacter* c = customAvatar(id)) return c->name;
     static const char* names[] = { "Robo", "Pofi", "Astro" };
     return names[std::clamp(id, 0, AVATAR_COUNT - 1)];
 }
-inline const char* avatarDesc(int id) {
+inline std::string avatarDesc(int id) {
+    if (const CustomCharacter* c = customAvatar(id)) return c->desc.empty() ? std::string(T("Senin karakterin", "Your own character")) : c->desc;
     switch (std::clamp(id, 0, AVATAR_COUNT - 1)) {
     case AVATAR_POFI:  return T("Turuncu tüylü dostun", "Your fluffy orange friend");
     case AVATAR_ASTRO: return T("Uzay kaşifi", "Space explorer");
@@ -97,8 +107,27 @@ inline AvatarLook lookFor(int id, Color accent) {
 }
 
 // Maskotu iskelete gore ciz (iskelet piksel koordinatinda, completeBody/fitBody'den gecmis olmali)
+// Kullanicinin PNG karakteri (2D)
+inline void drawCustomAvatar(const Skeleton& s, const CustomCharacter& ch, float alpha) {
+    const float t = (std::max)(s.torso(), 8.f);
+    Vector2 up = vsub(jv(s, ShoulderCenter), jv(s, HipCenter));
+    float ul = std::sqrt(up.x * up.x + up.y * up.y);
+    up = ul < 1.f ? Vector2{ 0, -1 } : vmul(up, 1.f / ul);
+    std::vector<std::tuple<const char*, bool, Vector2, Vector2>> plan;
+    customPartPlan<Vector2>([&](Joint j) { return jv(s, j); }, vadd, vsub, vmul,
+                            [](Vector2 v) { float l = std::sqrt(v.x * v.x + v.y * v.y); return l < 1e-4f ? Vector2{ 0, 1 } : vmul(v, 1.f / l); },
+                            t, up, plan);
+    for (auto& [part, left, a, b] : plan) {
+        const Texture2D* tx = ch.get(part, left);
+        bool hasLeft = left && ch.get(part, true) != ch.get(part, false);
+        drawPart2D(tx, a, b, left && !hasLeft, alpha);
+    }
+}
+
 inline void drawAvatar(const Skeleton& s, int id, Color accent, float alpha = 1.f) {
     if (!s.valid) return;
+    if (const CustomCharacter* ch = customAvatar(id)) { drawCustomAvatar(s, *ch, alpha); return; }
+    id = std::clamp(id, 0, AVATAR_COUNT - 1);
     const float t = (std::max)(s.torso(), 8.f);
     AvatarLook L = lookFor(id, accent);
     auto A = [&](Color c) { return ColorAlpha(c, alpha * c.a / 255.f); };

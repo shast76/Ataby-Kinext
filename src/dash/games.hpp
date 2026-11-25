@@ -12,6 +12,7 @@ struct GameContext {
     float dt;
     const Skeleton& body;     // 0-1, aynalanmis iskelet
     float time;               // toplam sure (animasyonlar icin)
+    int hand = 0;             // ayarlardaki kontrol eli: 0 otomatik, 1 sol, 2 sag
 };
 
 enum class GameAction { None, Restart, Exit };
@@ -38,9 +39,9 @@ inline const std::vector<GameInfo>& catalog() {
     static const std::vector<GameInfo> list = {
         { "balloon", "Balon Patlat", "Balloon Pop",  "Yükselen balonları ellerinle patlat", "Pop balloons with your hands", true  },
         { "dodge",   "Engelden Kaç", "Dodge",        "Sağa sola kayarak bloklardan kaç",    "Lean left and right to dodge", true  },
-        { "bowling", "Bowling",      "Bowling",      "Kolunu savur, lobutları devir",       "Swing your arm, knock pins down",     false },
+        { "bowling", "Bowling",      "Bowling",      "Kolunu savur, lobutları devir",       "Swing your arm, knock pins down",     true  },
         { "pose",    "Pozu Tut",     "Strike a Pose","Ekrandaki pozu taklit et",            "Copy the pose on screen",                 false },
-        { "keeper",  "Kaleci",       "Goalkeeper",   "Gelen toplara uzan, gol yeme",        "Stop the shots with your body",      false },
+        { "keeper",  "Kaleci",       "Goalkeeper",   "Şutları elinle, ayağınla kurtar",        "Stop the shots with your body",      true  },
     };
     return list;
 }

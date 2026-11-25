@@ -1,0 +1,32 @@
+KINEXT KARAKTER SABLONU  /  CHARACTER TEMPLATE
+================================================
+
+TURKCE
+------
+1) Bu klasoru kopyala ve adini degistir (ornek: "Ejderham").
+2) Her PNG'nin ustune kendi cizimini yap (Photoshop, Krita, Paint.NET, GIMP...).
+   - Arka plan SEFFAF olmali.
+   - Kirmizi kesikli cizgiler eklem noktalaridir: parcanin o cizgilere kadar uzanmasi gerekir.
+     Ornek: upper_arm.png'de ust cizgi omuz, alt cizgi dirsek.
+   - Kirmizi cizgileri ve yazilari cizimini bitirince sil.
+   - Resim boyutunu degistirebilirsin; cizgiler her zaman ustten %10 ve alttan %10'da kabul edilir.
+3) Kol ve bacak resimleri SAG taraf icindir; sol taraf otomatik aynalanir.
+   Farkli olsun istersen upper_arm_left.png gibi "_left" ekli bir dosya ekle.
+4) Istege bagli: head_back.png ve torso_back.png (3D oyunlarda arkadan gorunus).
+5) character.txt icinde adini ve kisa aciklamasini yaz.
+6) Klasoru Kinext penceresine SURUKLE-BIRAK. Karakterin Maskot listesine eklenir.
+   (Ya da klasoru %APPDATA%\Kinext\characters icine kopyala.)
+
+ENGLISH
+-------
+1) Copy this folder and rename it (e.g. "MyDragon").
+2) Draw over each PNG (Photoshop, Krita, Paint.NET, GIMP...). Keep the background TRANSPARENT.
+   The red dashed lines are the joints: the part must reach those lines
+   (e.g. upper_arm.png: top line = shoulder, bottom line = elbow). Remove the guides when done.
+   You may resize images; the joints are always at 10% from the top and 10% from the bottom.
+3) Arm and leg images are for the RIGHT side; the left side is mirrored automatically.
+   Add "_left" files (e.g. upper_arm_left.png) for a different left side.
+4) Optional: head_back.png and torso_back.png (back view in 3D games).
+5) Put the name and a short description in character.txt.
+6) DRAG AND DROP the folder onto the Kinext window. Your character appears in the Mascot list.
+   (Or copy the folder into %APPDATA%\Kinext\characters.)

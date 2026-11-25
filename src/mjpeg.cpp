@@ -90,7 +90,7 @@ bool MjpegStream::open(const std::string& address, int timeoutMs) {
     if (rc != 0) { close(); error_ = "Baglanilamadi (telefon ve bilgisayar ayni Wi-Fi'da mi?)"; return false; }
 
     std::string req = "GET " + u.path + " HTTP/1.1\r\nHost: " + u.host + ":" + u.port +
-                      "\r\nUser-Agent: Kinext/1.0\r\nConnection: keep-alive\r\n\r\n";
+                      "\r\nUser-Agent: Kinext/1.1\r\nConnection: keep-alive\r\n\r\n";
     if (send(s, req.c_str(), static_cast<int>(req.size()), 0) <= 0) { close(); error_ = "Istek gonderilemedi"; return false; }
 
     // Ilk kare gelene kadar bekle: adres dogru mu, gercekten goruntu akisi mi?

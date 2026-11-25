@@ -2,10 +2,10 @@
 setlocal enabledelayedexpansion
 chcp 65001 >nul
 rem ============================================================================
-rem  Kinext 1.0 - kurulum sihirbazi olusturucu
+rem  Kinext 1.1 - kurulum sihirbazi olusturucu
 rem  1) Visual Studio'da kinext_dashboard.exe'yi Release olarak derleyin
 rem  2) Inno Setup 6 ya da 7'yi kurun: https://jrsoftware.org/isdl.php
-rem  3) Bu dosyaya cift tiklayin. Sonuc: installer\Output\Kinext-1.0-Setup.exe
+rem  3) Bu dosyaya cift tiklayin. Sonuc: installer\Output\Kinext-1.1-Setup.exe
 rem ============================================================================
 
 set "ROOT=%~dp0.."
@@ -30,7 +30,7 @@ mkdir "%DIST%\models" "%DIST%\assets"
 copy /y "%BUILD%\kinext_dashboard.exe" "%DIST%\" >nul
 copy /y "%BUILD%\*.dll" "%DIST%\" >nul
 copy /y "%ROOT%\models\*.onnx" "%DIST%\models\" >nul
-copy /y "%ROOT%\assets\*.*" "%DIST%\assets\" >nul
+xcopy /e /i /y /q "%ROOT%\assets" "%DIST%\assets" >nul
 copy /y "%HERE%THIRD_PARTY_NOTICES.txt" "%DIST%\" >nul
 if not exist "%DIST%\models\movenet_lightning.onnx" if not exist "%DIST%\models\movenet_thunder.onnx" (
     echo [HATA] models klasorunde MoveNet modeli yok.
@@ -84,7 +84,7 @@ if not "!ERR!"=="0" (
 )
 
 echo.
-echo  TAMAM: %HERE%Output\Kinext-1.0-Setup.exe
+echo  TAMAM: %HERE%Output\Kinext-1.1-Setup.exe
 echo.
 explorer "%HERE%Output"
 pause

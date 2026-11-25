@@ -1,0 +1,2 @@
+name=Karakterim
+description=Benim karakterim

@@ -1,8 +1,8 @@
-﻿; Kinext 1.0 - kurulum sihirbazi (Inno Setup 6.4+ ya da 7)
+﻿; Kinext 1.1 - kurulum sihirbazi (Inno Setup 6.4+ ya da 7)
 ; Dogrudan derlemeyin: once build_installer.bat calistirilir, o "dist" klasorunu hazirlayip bu betigi derler.
 
 #define AppName      "Kinext"
-#define AppVersion   "1.0"
+#define AppVersion   "1.1"
 #define AppPublisher "Ataby"
 #define AppURL       "https://github.com/shast76/Project-Kinext"
 #define AppExe       "kinext_dashboard.exe"

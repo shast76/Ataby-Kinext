@@ -4,6 +4,9 @@
 #include "../tracker.hpp"
 #include "game_balloon.hpp"
 #include "game_dodge.hpp"
+#include "game_bowling.hpp"
+#include "game_keeper.hpp"
+#include "../voice.hpp"
 #include "settings.hpp"
 #include <filesystem>
 #include <map>
@@ -18,8 +21,12 @@ public:
         : f_(f), s_(s), tracker_(tr), trackerOk_(trackerOk), logo_(logo) {
         games_["balloon"] = std::make_unique<BalloonGame>(&s_.best["balloon"]);
         games_["dodge"] = std::make_unique<DodgeGame>(&s_.best["dodge"]);
+        games_["bowling"] = std::make_unique<BowlingGame>(&s_.best["bowling"]);
+        games_["keeper"] = std::make_unique<KeeperGame>(&s_.best["keeper"]);
         cameraNames_ = tracker_.cameraNames();
         setLang(s_.lang);
+        CharacterLibrary::get().refresh();
+        resolveAvatar();
         scene_ = s_.setupDone ? Scene::Dashboard : Scene::PickLanguage;
     }
 
@@ -46,6 +53,8 @@ public:
         if (s_.calValid && !(scene_ == Scene::Calibrate && calStep_ < 3))
             cal = { true, s_.calSide, { s_.calTLx, s_.calTLy }, { s_.calBRx, s_.calBRy } };
         ui_.setCalibration(cal);
+        updateVoice();
+        updateCharacters(dt);
         ui_.begin(dt, body_);
         switch (scene_) {
         case Scene::PickLanguage: pickLanguage(); break;
@@ -127,9 +136,59 @@ private:
         std::string st = trackerOk_
             ? T("Kamera: ", "Camera: ") + cam + "   ·   " + std::to_string(static_cast<int>(fps_)) + " FPS   ·   " + backend_
             : T("Hareket takibi başlatılamadı: ", "Motion tracking could not start: ") + translateError(tracker_.error());
+        if (voice_.running()) st += std::string("   ·   ") + T("Sesli komut açık", "Voice on");
         text(f_.regular, st, 40, VH - 44, 18, trackerOk_ ? Color{ 140, 140, 150, 255 } : Color{ 255, 120, 110, 255 });
         std::string hint = body_.valid ? T("Elini kaldır ve bir kutunun üstünde tut", "Raise your hand and hold it over a tile") : T("Kameranın önüne geç", "Step in front of the camera");
         text(f_.regular, hint, VW - 40 - textWidth(f_.regular, hint, 18), VH - 44, 18, { 140, 140, 150, 255 });
+    }
+
+    // ---------------- sesli komut ----------------
+    void updateVoice() {
+        // Ac/kapa ve dil degisince yeniden baslat
+        if (s_.voice && voiceLang_ != s_.lang) { voice_.start(s_.lang); voiceLang_ = s_.lang; voicePending_ = true; }
+        if (!s_.voice && voiceLang_ != -1) { voice_.stop(); voiceLang_ = -1; voicePending_ = false; }
+        if (voicePending_ && !voice_.starting()) {
+            voicePending_ = false;
+            if (voice_.running()) toast(voiceHint());
+            else { toast(translateError(voice_.error())); s_.voice = false; s_.save(); }
+        }
+        for (VoiceEvent e = voice_.poll(); e.cmd != VoiceCmd::None; e = voice_.poll()) {
+            if (!s_.setupDone || confirmReset_) continue;
+            toast("\"" + e.heard + "\"");
+            auto toTab = [&](Tab t) { if (scene_ != Scene::Dashboard) go(Scene::Dashboard); tab_ = t; };
+            switch (e.cmd) {
+            case VoiceCmd::Home:     toTab(Tab::Home); break;
+            case VoiceCmd::Games:    toTab(Tab::Games); break;
+            case VoiceCmd::Store:    toTab(Tab::Store); break;
+            case VoiceCmd::Settings: toTab(Tab::Settings); break;
+            case VoiceCmd::Back:
+                if (scene_ == Scene::Playing || scene_ != Scene::Dashboard) go(Scene::Dashboard);
+                else tab_ = Tab::Home;
+                break;
+            case VoiceCmd::Again:
+                if (scene_ == Scene::Playing && current_) { current_->reset(); saved_ = false; }
+                else startGame(s_.lastGame);
+                break;
+            case VoiceCmd::PlayBalloon: startGame("balloon"); break;
+            case VoiceCmd::PlayDodge:   startGame("dodge"); break;
+            case VoiceCmd::PlayBowling: startGame("bowling"); break;
+            case VoiceCmd::PlayKeeper:  startGame("keeper"); break;
+            case VoiceCmd::Fullscreen:  ToggleBorderlessWindowed(); break;
+            case VoiceCmd::Calibrate:   startCalibration(); break;
+            default: break;
+            }
+        }
+    }
+    std::string voiceHint() const {
+        if (s_.lang == LANG_TR && !voice_.englishOnly()) return "Dinliyorum: \"Kinext, bowling oyna\" de";
+        if (s_.lang == LANG_TR) return "Komutlar İngilizce: \"Kinext, play bowling\" de";
+        return "Listening: say \"Kinext, play bowling\"";
+    }
+    std::string voiceState() const {
+        if (!s_.voice) return T("Kapalı", "Off");
+        if (voice_.starting()) return T("Başlıyor...", "Starting...");
+        if (!voice_.running()) return T("Kapalı", "Off");
+        return voice_.englishOnly() ? "Açık (İngilizce komutlar)" : T("Açık", "On");
     }
 
     void startGame(const std::string& id) {
@@ -187,34 +246,111 @@ private:
         statusBar();
     }
 
+    // ---------------- kendi karakterleri ----------------
+    // Kayitli karakter adini listedeki siraya cevir (karakter eklenip cikinca numaralar kayabilir)
+    void resolveAvatar() {
+        if (!s_.avatarName.empty()) {
+            int i = CharacterLibrary::get().indexOf(s_.avatarName);
+            s_.avatar = i >= 0 ? AVATAR_COUNT + i : 0;
+            if (i < 0) s_.avatarName.clear();
+        } else if (s_.avatar >= AVATAR_COUNT) s_.avatar = 0;
+    }
+    void updateCharacters(float dt) {
+        // Pencereye surukle-birak: karakter klasorunu iceri al
+        if (IsFileDropped()) {
+            FilePathList files = LoadDroppedFiles();
+            std::string added;
+            for (unsigned i = 0; i < files.count && added.empty(); ++i) added = CharacterLibrary::get().import(files.paths[i]);
+            UnloadDroppedFiles(files);
+            if (added.empty()) toast(T("Karakter bulunamadı: içinde head.png / torso.png olan bir klasör bırak", "No character found: drop a folder with head.png / torso.png"));
+            else {
+                CharacterLibrary::get().refresh();
+                resolveAvatar();
+                int i = CharacterLibrary::get().indexOf(added);
+                if (i < 0) for (int k = 0; k < CharacterLibrary::get().count(); ++k) if (std::filesystem::path(CharacterLibrary::get().list()[k].dir).filename().string() == added) i = k;
+                if (i >= 0) { s_.avatar = AVATAR_COUNT + i; s_.avatarName = CharacterLibrary::get().list()[i].name; s_.save(); }
+                toast(std::string(T("Karakter eklendi: ", "Character added: ")) + avatarName(s_.avatar));
+            }
+        }
+        // Klasorler arada bir kontrol edilir: yeni karakter otomatik gelir
+        charScan_ -= dt;
+        if (charScan_ <= 0) {
+            charScan_ = scene_ == Scene::PickAvatar ? 1.f : 4.f;
+            if (scene_ != Scene::Playing && CharacterLibrary::get().refresh()) resolveAvatar();
+        }
+    }
+
     void pickAvatar() {
         background();
-        textCenter(f_.light, T("Maskotunu seç", "Choose your mascot"), VW / 2.f, 60, 56, WHITE);
-        textCenter(f_.regular, T("Oyunlarda kamera görüntüsü yerine bu maskot olarak görüneceksin", "In games you'll appear as this mascot instead of the camera image"), VW / 2.f, 140, 24, { 170, 170, 180, 255 });
-        const float w = 320, h = 430, gap = 36;
-        const float x0 = (VW - (static_cast<float>(AVATAR_COUNT) * w + (AVATAR_COUNT - 1) * gap)) / 2;
-        for (int i = 0; i < AVATAR_COUNT; ++i) {
-            Rectangle r = { x0 + i * (w + gap), 200, w, h };
+        textCenter(f_.light, T("Maskotunu seç", "Choose your mascot"), VW / 2.f, 50, 56, WHITE);
+        textCenter(f_.regular, T("Oyunlarda kamera görüntüsü yerine bu maskot olarak görüneceksin", "In games you'll appear as this mascot instead of the camera image"), VW / 2.f, 126, 24, { 170, 170, 180, 255 });
+        const int total = avatarCount(), perPage = 5;
+        const int pages = (total + perPage - 1) / perPage;
+        avatarPage_ = std::clamp(avatarPage_, 0, (std::max)(pages - 1, 0));
+        const int first = avatarPage_ * perPage, k = (std::min)(perPage, total - first);
+        const float gap = 24, h = 430;
+        const float w = (std::min)(300.f, (VW - 160.f - k * gap) / (k + 1));
+        const float x0 = (VW - ((k + 1) * w + k * gap)) / 2;
+        for (int n = 0; n < k; ++n) {
+            int i = first + n;
+            Rectangle r = { x0 + n * (w + gap), 180, w, h };
             bool hover = ui_.hovered(r);
             DrawRectangleRec(r, hover ? lighten(accent_, 0.1f) : ColorAlpha(accent_, 0.55f));
             float cx = r.x + w / 2, hipY = r.y + 230;
             Skeleton b = body_.valid ? fitBody(body_, cx, hipY, 70, false) : idleBody(cx, hipY, 70, time_ + i);
             drawAvatar(b, i, accent_);
             DrawRectangle(static_cast<int>(r.x), static_cast<int>(r.y + h - 86), static_cast<int>(w), 86, { 0, 0, 0, 110 });
-            text(f_.bold, avatarName(i), r.x + 16, r.y + h - 80, 32, WHITE);
-            text(f_.regular, avatarDesc(i), r.x + 16, r.y + h - 40, 20, { 225, 225, 230, 255 });
+            text(f_.bold, avatarName(i), r.x + 16, r.y + h - 80, 30, WHITE);
+            text(f_.regular, avatarDesc(i), r.x + 16, r.y + h - 40, 18, { 225, 225, 230, 255 });
             if (hover || i == s_.avatar) DrawRectangleLinesEx({ r.x - 3, r.y - 3, w + 6, h + 6 }, 3, WHITE);
             if (ui_.select("avatar" + std::to_string(i), r)) {
                 s_.avatar = i;
-                bool first = !s_.setupDone;
+                s_.avatarName = i >= AVATAR_COUNT ? avatarName(i) : std::string();
+                bool firstRun = !s_.setupDone;
                 s_.setupDone = true;
                 s_.save();
-                tab_ = first ? Tab::Home : Tab::Settings;
+                tab_ = firstRun ? Tab::Home : Tab::Settings;
                 go(Scene::Dashboard);
-                if (first) toast(std::string(T("Hoş geldin ", "Welcome ")) + s_.name + "!");
+                if (firstRun) toast(std::string(T("Hoş geldin ", "Welcome ")) + s_.name + "!");
+            }
+        }
+        // Kendi karakterini yap: sablon klasorunu ac
+        Rectangle add = { x0 + k * (w + gap), 180, w, h };
+        bool hover = ui_.hovered(add);
+        DrawRectangleRec(add, hover ? Color{ 80, 80, 90, 255 } : Color{ 55, 55, 64, 255 });
+        DrawRectangleLinesEx({ add.x + 14, add.y + 14, add.width - 28, 200 }, 3, { 150, 150, 160, 255 });
+        textCenter(f_.light, "+", add.x + w / 2, add.y + 60, 110, { 200, 200, 210, 255 });
+        text(f_.bold, T("Kendi karakterin", "Your own character"), add.x + 16, add.y + 236, 22, WHITE);
+        const char* steps[] = { T("1. Şablon klasörünü aç", "1. Open the template folder"), T("2. Parçaları çiz (PNG)", "2. Draw the parts (PNG)"),
+                                T("3. Klasörü bu pencereye", "3. Drag the folder onto"), T("   sürükle bırak", "   this window") };
+        for (int i = 0; i < 4; ++i) text(f_.regular, steps[i], add.x + 16, add.y + 274 + i * 26, 17, { 210, 210, 220, 255 });
+        if (hover) DrawRectangleLinesEx({ add.x - 3, add.y - 3, w + 6, h + 6 }, 3, WHITE);
+        if (ui_.select("avatar_add", add)) openTemplateFolder();
+        // sayfalar
+        if (pages > 1) {
+            Rectangle prev = { 20, 340, 56, 110 }, next = { VW - 76.f, 340, 56, 110 };
+            if (avatarPage_ > 0) {
+                drawTile(f_, prev, { 70, 70, 78, 255 }, "", Icon::None, ui_.hovered(prev));
+                textCenter(f_.light, "<", prev.x + 28, prev.y + 24, 56, WHITE);
+                if (ui_.select("avatar_prev", prev)) --avatarPage_;
+            }
+            if (avatarPage_ < pages - 1) {
+                drawTile(f_, next, { 70, 70, 78, 255 }, "", Icon::None, ui_.hovered(next));
+                textCenter(f_.light, ">", next.x + 28, next.y + 24, 56, WHITE);
+                if (ui_.select("avatar_next", next)) ++avatarPage_;
             }
         }
         statusBar();
+    }
+    void openTemplateFolder() {
+        namespace fs = std::filesystem;
+        std::error_code ec;
+        // sablonu kullanicinin karakter klasorunun yanina kopyala ki rahatca duzenlensin
+        fs::path dst = CharacterLibrary::userDir().parent_path() / "character_template";
+        if (!fs::exists(dst, ec)) fs::copy("assets/character_template", dst, fs::copy_options::recursive, ec);
+        fs::path open = fs::exists(dst, ec) ? dst : fs::absolute("assets/character_template", ec);
+        OpenURL(open.string().c_str());
+        toast(T("Şablonu kopyala, parçaları çiz, klasörü buraya sürükle", "Copy the template, draw the parts, drag the folder here"));
     }
 
     // ---------------- dashboard ----------------
@@ -294,20 +430,26 @@ private:
         drawTile(f_, tCam, accent_, T("Kamera", "Camera"), Icon::Camera, ui_.hovered(tCam), 17);
         if (ui_.select("home_cam", tCam)) nextCamera();
         // Diger kurulu oyun
+        const GameInfo* other = nullptr;
         for (const auto& g : catalog())
-            if (g.installed && last->id != std::string(g.id)) {
-                if (gameTile(g.id, { 710, 501, 282, 99 }, g.title(), 20)) startGame(g.id);
-                break;
-            }
+            if (g.installed && last->id != std::string(g.id)) { other = &g; break; }
+        if (other && gameTile(other->id, { 710, 501, 282, 99 }, other->title(), 20)) startGame(other->id);
 
         // One cikanlar (magazadan)
         text(f_.regular, T("ÖNE ÇIKANLAR", "FEATURED"), 1012, 168, 16, { 160, 160, 170, 255 });
-        int k = 0;
-        for (const auto& g : catalog()) {
-            if (g.installed) continue;
+        // Once yeni oyunlar (son eklenenler), sonra yakinda gelecekler; ana sayfada zaten gorunenler haric
+        std::vector<const GameInfo*> feat;
+        for (const char* id : { "keeper", "bowling", "pose", "dodge", "balloon" }) {
+            const GameInfo* g = findGame(id);
+            if (!g || g == last || g == other) continue;
+            feat.push_back(g);
+            if (feat.size() == 2) break;
+        }
+        for (size_t k = 0; k < feat.size(); ++k) {
+            const GameInfo& g = *feat[k];
             Rectangle r = { 1012, 196.f + k * 206, 228, 194 };
-            if (gameTile(g.id, r, g.title(), 22, T("Yakında", "Coming soon"))) { tab_ = Tab::Store; toast(std::string(g.title()) + T(" yakında geliyor!", " is coming soon!")); }
-            if (++k == 2) break;
+            if (g.installed) { if (gameTile(g.id, r, g.title(), 22, T("Yeni!  Oyna", "New!  Play"))) startGame(g.id); }
+            else if (gameTile(g.id, r, g.title(), 22, T("Yakında", "Coming soon"))) { tab_ = Tab::Store; toast(std::string(g.title()) + T(" yakında geliyor!", " is coming soon!")); }
         }
     }
 
@@ -316,11 +458,11 @@ private:
         int i = 0;
         for (const auto& g : catalog()) {
             if (!g.installed) continue;
-            Rectangle r = { 40.f + i * 400, 206, 380, 260 };
+            Rectangle r = { 40.f + (i % 3) * 400, 206.f + (i / 3) * 220, 380, 200 };
             if (gameTile(g.id, r, g.title(), 28, bestText(g.id))) startGame(g.id);
             ++i;
         }
-        Rectangle more = { 40.f + i * 400, 206, 200, 260 };
+        Rectangle more = { 40.f + (i % 3) * 400, 206.f + (i / 3) * 220, 200, 200 };
         drawTile(f_, more, ColorAlpha(accent_, 0.6f), T("Daha fazla oyun", "More games"), Icon::Store, ui_.hovered(more));
         if (ui_.select("games_more", more)) tab_ = Tab::Store;
     }
@@ -354,6 +496,7 @@ private:
             { "set_cal", T("Kalibrasyon", "Calibration"), Icon::Target },
             { "set_phone", T("Telefon kamerası", "Phone camera"), Icon::Phone },
             { "set_lang", "Dil / Language", Icon::Globe },
+            { "set_voice", std::string(T("Sesli komut: ", "Voice: ")) + (s_.voice ? T("Açık", "On") : T("Kapalı", "Off")), Icon::Mic },
             { "set_full", IsWindowFullscreen() || IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE) ? T("Pencere modu", "Windowed") : T("Tam ekran", "Full screen"), Icon::Play },
             { "set_reset", T("Ayarları sıfırla", "Reset settings"), Icon::Reset },
             { "set_quit", T("Kapat", "Quit"), Icon::Power },
@@ -361,7 +504,7 @@ private:
         const int n = static_cast<int>(sizeof(items) / sizeof(items[0]));
         for (int i = 0; i < n; ++i) {
             Rectangle r = { 40 + (i % 4) * (w + gap), 176 + (i / 4) * (h + gap), w, h };
-            Color bg = i >= 8 ? Color{ 70, 70, 78, 255 } : accent_;
+            Color bg = i >= 9 ? Color{ 70, 70, 78, 255 } : accent_;
             drawTile(f_, r, bg, items[i].label, items[i].icon, ui_.hovered(r), 17);
             if (!ui_.select(items[i].id, r)) continue;
             switch (i) {
@@ -376,9 +519,14 @@ private:
             case 4: startCalibration(); break;
             case 5: phoneInput_ = s_.phoneUrl.empty() ? phoneInput_ : shortUrl(s_.phoneUrl); go(Scene::Phone); break;
             case 6: go(Scene::PickLanguage); break;
-            case 7: ToggleBorderlessWindowed(); break;
-            case 8: confirmReset_ = true; break;
-            case 9: s_.save(); quit = true; break;
+            case 7:
+                s_.voice = !s_.voice;
+                s_.save();
+                if (!s_.voice) toast(T("Sesli komut kapatıldı", "Voice commands off"));
+                break;
+            case 8: ToggleBorderlessWindowed(); break;
+            case 9: confirmReset_ = true; break;
+            case 10: s_.save(); quit = true; break;
             }
         }
         // Bilgi (sagda)
@@ -393,8 +541,9 @@ private:
         info(350, T("Kontrol eli", "Control hand"), Ui::handModeName(s_.hand));
         info(466, "Dil / Language", s_.lang == LANG_EN ? "English" : "Türkçe");
         info(408, T("Kalibrasyon", "Calibration"), s_.calValid ? std::string(T("Sana özel", "Personal")) : std::string(T("Varsayılan", "Default")));
-        text(f_.regular, "Kinext 1.0", ix, 560, 18, { 120, 120, 130, 255 });
-        text(f_.regular, T("Microsoft ile bağlantılı değildir", "Not affiliated with Microsoft"), ix, 584, 16, { 110, 110, 120, 255 });
+        info(524, T("Sesli komut", "Voice commands"), voiceState());
+        text(f_.regular, "Kinext 1.1", ix, 600, 18, { 120, 120, 130, 255 });
+        text(f_.regular, T("Microsoft ile bağlantılı değildir", "Not affiliated with Microsoft"), ix, 624, 16, { 110, 110, 120, 255 });
     }
 
     // Sifirlama onay penceresi (arkadaki her sey kilitli)
@@ -663,7 +812,7 @@ private:
     // ---------------- oyun ----------------
     void playing(float dt) {
         if (!current_) { go(Scene::Dashboard); return; }
-        GameContext ctx{ f_, ui_, accent_, s_.avatar, dt, body_, time_ };
+        GameContext ctx{ f_, ui_, accent_, s_.avatar, dt, body_, time_, s_.hand };
         GameAction a = current_->frame(ctx);
         if (current_->finished() && !saved_) { s_.save(); saved_ = true; }
         if (a == GameAction::Restart) { current_->reset(); saved_ = false; }
@@ -698,6 +847,13 @@ private:
     Vector2 calTL_{}, calBR_{};
     std::string calMsg_;
     std::string backend_, toast_;
+    // kendi karakterleri
+    float charScan_ = 0;
+    int avatarPage_ = 0;
+    // sesli komut
+    Voice voice_;
+    int voiceLang_ = -1;
+    bool voicePending_ = false;
 };
 
 int main() {
@@ -705,7 +861,7 @@ int main() {
     ChangeDirectory(GetApplicationDirectory());
 
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT | FLAG_MSAA_4X_HINT);
-    InitWindow(VW, VH, "Kinext 1.0");
+    InitWindow(VW, VH, "Kinext 1.1");
     SetWindowMinSize(640, 360);
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);   // ESC pencereyi kapatmasin, menude geri gitsin

@@ -10,6 +10,7 @@ struct Settings {
     bool setupDone = false;
     int accent = 0;
     int avatar = 0;
+    std::string avatarName;              // kendi karakteri secildiyse adi (liste degisse de dogru karakter secili kalsin)
     int camera = 0;
     int hand = 0;                        // 0 otomatik, 1 sol, 2 sag
     int lang = 0;                        // 0 Turkce, 1 English
@@ -23,6 +24,7 @@ struct Settings {
     // Telefon kamerasi (IP Webcam vb.): bos degilse kamera yerine bu adres kullanilir
     std::string phoneUrl;
     bool usePhone = false;
+    bool voice = false;                  // sesli komutlar
     std::string name;
     std::string lastGame = "balloon";
     std::map<std::string, int> best;     // oyun id -> en yuksek skor
@@ -62,6 +64,7 @@ struct Settings {
                 if (k == "setup") setupDone = v == "1";
                 else if (k == "accent") accent = std::stoi(v);
                 else if (k == "avatar") avatar = std::stoi(v);
+                else if (k == "avatar_name") avatarName = v;
                 else if (k == "camera") camera = std::stoi(v);
                 else if (k == "hand") hand = std::stoi(v);
                 else if (k == "lang") lang = std::stoi(v);
@@ -74,6 +77,7 @@ struct Settings {
                 else if (k == "cal_bry") calBRy = std::stof(v);
                 else if (k == "phone_url") phoneUrl = v;
                 else if (k == "use_phone") usePhone = v == "1";
+                else if (k == "voice") voice = v == "1";
                 else if (k == "name" && !v.empty()) name = v;
                 else if (k == "last") lastGame = v;
                 else if (k.rfind("best_", 0) == 0) best[k.substr(5)] = std::stoi(v);
@@ -87,6 +91,7 @@ struct Settings {
         out << "setup=" << (setupDone ? 1 : 0) << "\n"
             << "accent=" << accent << "\n"
             << "avatar=" << avatar << "\n"
+            << "avatar_name=" << avatarName << "\n"
             << "camera=" << camera << "\n"
             << "hand=" << hand << "\n"
             << "lang=" << lang << "\n"
@@ -97,6 +102,7 @@ struct Settings {
             << "cal_brx=" << calBRx << "\n" << "cal_bry=" << calBRy << "\n"
             << "phone_url=" << phoneUrl << "\n"
             << "use_phone=" << (usePhone ? 1 : 0) << "\n"
+            << "voice=" << (voice ? 1 : 0) << "\n"
             << "name=" << name << "\n"
             << "last=" << lastGame << "\n";
         for (const auto& [k, v] : best) out << "best_" << k << "=" << v << "\n";
@@ -106,9 +112,9 @@ struct Settings {
     // oyunlar bu degerlere isaretci tutuyor, harita yeniden olusturulmamali.
     void reset() {
         setupDone = false;
-        accent = 0; avatar = 0; camera = 0; hand = 0;
+        accent = 0; avatar = 0; avatarName.clear(); camera = 0; hand = 0;
         calValid = false; calSide = 1; calTLx = calTLy = calBRx = calBRy = 0;
-        phoneUrl.clear(); usePhone = false;
+        phoneUrl.clear(); usePhone = false; voice = false;
         lastGame = "balloon";
         for (auto& [k, v] : best) v = 0;
         const char* user = std::getenv("USERNAME");

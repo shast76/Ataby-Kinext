@@ -289,7 +289,7 @@ private:
 };
 
 // --- Basit cizim ikonlari (tum ikonlar koddan cizilir) ---
-enum class Icon { None, Games, Store, Settings, Camera, Avatar, Power, Color, Play, Hand, Reset, Target, Phone, Globe };
+enum class Icon { None, Games, Store, Settings, Camera, Avatar, Power, Color, Play, Hand, Reset, Target, Phone, Globe, Mic };
 
 inline void drawIcon(Icon icon, Vector2 c, float s, Color col) {
     switch (icon) {
@@ -359,6 +359,12 @@ inline void drawIcon(Icon icon, Vector2 c, float s, Color col) {
         DrawRectangleRec({ c.x - s * 0.025f, c.y - s * 0.44f, s * 0.05f, s * 0.88f }, col);
         DrawRectangleRec({ c.x - s * 0.36f, c.y - s * 0.24f, s * 0.72f, s * 0.04f }, col);
         DrawRectangleRec({ c.x - s * 0.36f, c.y + s * 0.2f, s * 0.72f, s * 0.04f }, col);
+        break;
+    case Icon::Mic:     // mikrofon: sesli komut
+        DrawRectangleRounded({ c.x - s * 0.17f, c.y - s * 0.52f, s * 0.34f, s * 0.62f }, 1.f, 12, col);
+        DrawRing({ c.x, c.y - s * 0.12f }, s * 0.26f, s * 0.33f, 0, 180, 24, col);
+        DrawRectangleRec({ c.x - s * 0.035f, c.y + s * 0.2f, s * 0.07f, s * 0.2f }, col);
+        DrawRectangleRec({ c.x - s * 0.2f, c.y + s * 0.38f, s * 0.4f, s * 0.07f }, col);
         break;
     case Icon::Reset:   // geri donen ok
         DrawRing(c, s * 0.3f, s * 0.41f, 40, 330, 32, col);

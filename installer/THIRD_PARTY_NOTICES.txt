@@ -1,4 +1,4 @@
-Kinext 1.0 - Ucuncu taraf yazilim bildirimleri / Third-party notices
+Kinext 1.1 - Ucuncu taraf yazilim bildirimleri / Third-party notices
 =====================================================================
 
 Kinext, Microsoft ile baglantili degildir. "Kinect" ve "Xbox", Microsoft

@@ -25,6 +25,15 @@ inline std::string translateError(const std::string& e) {
         { "Telefon bağlantısı koptu: ", "Telefon bağlantısı koptu: ", "Phone connection lost: " },
         { "Kamera bulunamadi", "Kamera bulunamadı", "No camera found" },
         { "Model yuklenemedi: ", "Model yüklenemedi: ", "Model could not be loaded: " },
+        // sesli komut
+        { "Sesli komut sadece Windows'ta calisir", "Sesli komut sadece Windows'ta çalışır", "Voice commands only work on Windows" },
+        { "Konusma tanima baslatilamadi", "Konuşma tanıma başlatılamadı", "Speech recognition could not start" },
+        { "Konusma tanima motoru yok (Windows Ayarlar > Zaman ve dil > Konusma)", "Konuşma tanıma motoru yok (Windows Ayarlar > Zaman ve dil > Konuşma)", "No speech recognizer installed (Windows Settings > Time & language > Speech)" },
+        { "Konusma tanima motoru acilamadi", "Konuşma tanıma motoru açılamadı", "Speech recognizer could not be opened" },
+        { "Mikrofon bulunamadi", "Mikrofon bulunamadı", "No microphone found" },
+        { "Mikrofon acilamadi (Gizlilik > Mikrofon iznini kontrol et)", "Mikrofon açılamadı (Gizlilik > Mikrofon iznini kontrol et)", "Could not open the microphone (check Privacy > Microphone)" },
+        { "Komut listesi olusturulamadi", "Komut listesi oluşturulamadı", "Could not build the command list" },
+        { "Dinleme baslatilamadi", "Dinleme başlatılamadı", "Could not start listening" },
     };
     for (const auto& m : map) {
         std::string k = m.key;

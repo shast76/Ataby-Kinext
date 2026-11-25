@@ -1,0 +1,2 @@
+name=Kiki
+description=Ornek karakter / Example
