@@ -177,11 +177,13 @@ inline void drawAvatar3D(const Body3& b, int id, Color accent, Vector3 eye) {
             Vector3 dir = Vector3Normalize(Vector3Add(u, Vector3Scale(r, sx * 0.35f)));
             r3d::ellipsoid(Vector3Add(base, Vector3Scale(dir, hr * 0.3f)), { hr * 0.3f, hr * 0.5f, hr * 0.14f }, r3d::alignY(dir), L.limbDark, spec);
         }
-        Vector3 face = Vector3Add(hp, Vector3Scale(f, hr * 0.86f));
         for (float sx : { -1.f, 1.f }) {
-            Vector3 e = Vector3Add(Vector3Add(face, Vector3Scale(r, sx * hr * 0.36f)), Vector3Scale(u, hr * 0.08f));
-            r3d::ball(e, hr * 0.2f, WHITE, 0.5f);
-            r3d::ball(Vector3Add(e, Vector3Scale(f, hr * 0.12f)), hr * 0.11f, { 40, 30, 30, 255 }, 1.f);
+            // goz: kafa yuzeyinin uzerinde (yuzeye dik yerlestirilir)
+            Vector3 dir = Vector3Normalize(Vector3Add(Vector3Add(Vector3Scale(f, 0.86f), Vector3Scale(r, sx * 0.4f)), Vector3Scale(u, 0.18f)));
+            Vector3 e = Vector3Add(hp, Vector3Scale(dir, hr * 0.92f));
+            r3d::ball(e, hr * 0.24f, WHITE, 0.5f);
+            r3d::ball(Vector3Add(e, Vector3Scale(dir, hr * 0.16f)), hr * 0.13f, { 40, 30, 30, 255 }, 1.f);
+            r3d::ballLo(Vector3Add(Vector3Add(e, Vector3Scale(dir, hr * 0.27f)), Vector3Scale(u, hr * 0.05f)), hr * 0.04f, WHITE);
         }
         r3d::ellipsoid(Vector3Add(Vector3Add(hp, Vector3Scale(f, hr * 0.75f)), Vector3Scale(u, -hr * 0.3f)), { hr * 0.42f, hr * 0.3f, hr * 0.3f }, HR, L.belly);
         r3d::ball(Vector3Add(Vector3Add(hp, Vector3Scale(f, hr * 1.02f)), Vector3Scale(u, -hr * 0.18f)), hr * 0.09f, { 90, 45, 30, 255 }, 1.f);
